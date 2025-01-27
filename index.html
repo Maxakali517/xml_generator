@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML生成くん</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.7.1/dist/vuetify.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel=”icon” href="favicon.ico">
+</head>
+<body>
+    <div id="app"><v-app><v-locale-provider locale="ja">
+        <h1>XML生成くん</h1>
+        <div class="container">
+            <div class="container-left">
+                <div class="container-left-header">
+                    <input type="file" id="fileInput" @change="readXml" accept=".xml">
+                <br>
+                    <label>タグ名を表示する<input type="checkbox" v-model="displayTagName"></label>
+
+                </div>
+                <div class="container-left-main">
+                    <details open class="item"><summary><p>情報区分</p></summary>
+                        <div class="item child">
+                            <p>データ種別<span v-if="displayTagName"> :   DataClassification</span></p>
+                            <select v-model="internnalObject.TransactionType.DataClassification">
+                                <option value="NewBookReport">NewBookReport（予約）</option>
+                                <option value="ModificationReport">ModificationReport（変更）</option>
+                                <option value="CancellationReport">CancellationReport（取消）</option>
+                            </select>
+                        </div>
+                    </details>
+    
+                    <details open class="item"><summary><p>宿泊施設側情報</p></summary>
+                        <div class="item child">
+                            <table>
+                                <tr>
+                                    <th><p>宿泊施設コード<br><span v-if="displayTagName">AcoomodationCode</span></p></th>
+                                    <th><p>宿泊施設名<br><span v-if="displayTagName">AcoomodationName</span></p></th>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" v-model="internnalObject.AccommodationInformation.AccommodationCode"></td>
+                                    <td><input type="text" v-model="internnalObject.AccommodationInformation.AccommodationName"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </details>
+    
+                    <details open class="item"><summary><p>旅行会社情報</p></summary>
+                        <div class="item child">
+                            <table>
+                                <tr>
+                                    <th>
+                                        <p>旅行会社コード<br><span v-if="displayTagName">SalesOfficeCompanyCode</span></p>
+                                    </th>
+                                    <th>
+                                        <p>旅行会社名<br><span v-if="displayTagName">SalesOfficeCompanyName</span></p>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <input type="text" v-model="internnalObject.RisaplsInformation.RisaplsCommonInformation.Basic.SalesOfficeCompanyCode">
+                                    </td>
+                                    <td>
+                                        <input type="text" v-model="internnalObject.SalesOfficeInformation.SalesOfficeCompanyName">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="item child">
+                            <table>
+                                <tr>
+                                    <th>
+                                        <p>支店コード<br><span v-if="displayTagName">SalesOfficeCode</span></p>
+                                    </th>
+                                    <th>
+                                        <p>支店名<br><span v-if="displayTagName">SalesOfficeName</span></p>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <input type="text" v-model="internnalObject.SalesOfficeInformation.SalesOfficeCode">
+                                    </td>
+                                    <td>
+                                        <input type="text" v-model="internnalObject.SalesOfficeInformation.SalesOfficeName">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div> 
+                    </details>
+                    
+                    <details open class="item"><summary><p>基本宿泊情報</p></summary>
+                        <div class="item child">
+                            <p>リファレンス#<span v-if="displayTagName"> : TravelAgencyBookingNumber</span></p>
+                            <input type="text" v-model="internnalObject.BasicInformation.TravelAgencyBookingNumber">
+                        </div>
+                        <div class="item child">
+                            <p>ゲスト名カナ<span v-if="displayTagName"> : GuestOrGroupNameSingleByte</span></p>
+                            <input type="text" v-model="internnalObject.BasicInformation.GuestOrGroupNameSingleByte">
+                        </div>
+                        <div class="item child">
+                            <p>チェックイン日<span v-if="displayTagName"> : CheckInDate</span></p>
+                            <input type="date" :value="internnalObject.BasicInformation.CheckInDate" readonly>
+                            <v-menu :close-on-content-click="false" close-on-click>
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" prepend-icon="mdi-calendar-today" width="120">日付を選択する</v-btn>
+                                </template>
+                                <v-date-picker
+                                    v-model="ciDate"
+                                    @update:model-value="updateCiDate"
+                                    :max="coDateYesterday"
+                                ></v-date-picker>
+                            </v-menu>
+                        </div>
+                        <div class="item child">
+                            <p>チェックアウト日<span v-if="displayTagName"> : CheckOutDate</span></p>
+                            <input type="date" :min="ciDateTomorrow" v-model="internnalObject.BasicInformation.CheckOutDate" readonly>
+                            <v-menu :close-on-content-click="false" close-on-click>
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" prepend-icon="mdi-calendar-today" width="120">日付を選択する</v-btn>
+                                </template>
+                                <v-date-picker
+                                    v-model="coDate"
+                                    @update:model-value="updateCoDate"
+                                    :min="ciDateTomorrow"
+                                    no-title
+                                ></v-date-picker>
+                            </v-menu>
+                        </div>
+                        <div class="item child">
+                            <p>泊数<span v-if="displayTagName"> : Nights</span></p>
+                            <input type="number" v-model.number="internnalObject.BasicInformation.Nights" readonly>  
+                            <v-btn @click="decreaseNights(1)" size="small"><v-icon>mdi-minus-thick</v-icon></v-btn>
+                            <v-btn @click="increaseNights(1)" size="small"><v-icon>mdi-plus-thick</v-icon></v-btn>
+                        </div>
+                        <div class="item child">
+                            <p>総部屋数<span v-if="displayTagName"> : TotalRoomCount</span></p>
+                            <input type="number" v-model.number="internnalObject.BasicInformation.TotalRoomCount" readonly>  
+                            <v-btn @click="decreaseTotalRoomCount(1)" size="small"><v-icon>mdi-minus-thick</v-icon></v-btn>
+                            <v-btn @click="increaseTotalRoomCount(1)" size="small"><v-icon>mdi-plus-thick</v-icon></v-btn>
+                        </div>
+                        <div class="item child">
+                            <p>プラン名称<span v-if="displayTagName"> : プラン名</span></p>
+                            <input type="text" v-model="internnalObject.BasicInformation.PackagePlanName">
+                        </div>
+                        <div class="item child">
+                            <p>プランコード<span v-if="displayTagName"> : PackagePlanCode</span></p>
+                            <input type="text" v-model="internnalObject.BasicInformation.PackagePlanCode">
+                        </div>
+                        <div class="item child">
+                            <p>食事情報<span v-if="displayTagName"> : MealCondition</span></p>
+                            <select v-model="internnalObject.BasicInformation.MealCondition">
+                                <option value="1night2meals">1night2meals</option>
+                                <option value="1nightBreakfast">1nightBreakfast</option>
+                                <option value="WithoutMeal">WithoutMeal</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="item child">
+                            <p>食事有無情報<span v-if="displayTagName"> : SpecificMealCondition</span></p>
+                            <select v-model="internnalObject.BasicInformation.SpecificMealCondition">
+                                <option value="IncludingBreakfast">IncludingBreakfast</option>
+                                <option value="IncludingDinner">IncludingDinner</option>
+                                <option value="IncludingBreakfastAndDinner">IncludingBreakfastAndDinner</option>
+                                <option value="IncludingLunch">IncludingLunch</option>
+                                <option value="IncludingBreakfastAndLunchAndDinner">IncludingBreakfastAndLunchAndDinner</option>
+                                <option value="None Specified">None Specified</option>
+                                <option value="IncludingBreakfastAndLunch">IncludingBreakfastAndLunch</option>
+                                <option value="IncludingLunchAndDinner">IncludingLunchAndDinner</option>
+                            </select>
+                        </div>
+                    </details>
+    
+                    <details open class="item"><summary><p>その他</p></summary>
+                        <div class="item child">
+                            <p>料金区分<span v-if="displayTagName"> : RoomRateOrPersonalRate</span></p>
+                            <select v-model="internnalObject.BasicRateInformation.RoomRateOrPersonalRate">
+                                <option value="RoomRate">RoomRate（室単価）</option>
+                                <option value="PersonalRate">PersonalRate（人員単価）</option>
+                            </select>
+                        </div>
+                        <details open class="item"><summary><p>支払い方法</p></summary>
+                            <div class="item child">
+                                <p>事前決済区分<span v-if="displayTagName"> : SettlementDiv</span></p>
+                                <select v-model="internnalObject.RisaplsInformation.AgentNativeInformation.Extendmytrip.SettlementDiv">
+                                    <option value="0">0（指定なし）</option>
+                                    <option value="1">1（法人利用）</option>
+                                    <option value="2">2（カード決済ズミ）</option>
+                                    <option value="3">3（現地払い）</option>
+                                    <option value="4">4（ツアー会社）</option>
+                                    <option value="5">5（一部精算）</option>
+                                    <option value="6">6（エージェント精算）</option>
+                                </select>
+                            </div>
+                            <div class="item child">
+                                <p>Payment<span v-if="displayTagName"> : Payment</span></p>
+                                <select v-model="internnalObject.BasicRateInformation.Payment">
+                                    <option></option>
+                                    <option value="Coupon">Coupon</option>
+                                    <option value="NoCoupon">NoCoupon</option>
+                                    <option value="Cach">Cach</option>
+                                    <option value="CreditCard">CreditCard</option>
+                                    <option value="Voucher">Voucher</option>
+                                    <option value="DebitCard">DebitCard</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </details>
+                        <details open class="item"><summary><p>予約情報</p></summary>
+                            <div class="item child">
+                                <p>部屋割区分<span v-if="displayTagName"> : AssignDiv</span></p>
+                                <select v-model="internnalObject.RisaplsInformation.RisaplsCommonInformation.Allotment.AssignDiv">
+                                    <option value="0">0（部屋割りなし）</option>
+                                    <option value="1">1（部屋割りあり）</option>
+                                </select>
+                            </div>
+                            <div class="item child">
+                                <p>男女区分<span v-if="displayTagName"> : GenderDiv</span></p>
+                                <select v-model="internnalObject.RisaplsInformation.RisaplsCommonInformation.Allotment.GenderDiv">
+                                    <option value="0">0（男女区分なし）</option>
+                                    <option value="1">1（男女区分あり）</option>
+                                </select>
+                            </div>
+                            <div class="item child">
+                                <p>取扱区分<span v-if="displayTagName"> : HandleDiv</span></p>
+                                <select v-model="internnalObject.RisaplsInformation.RisaplsCommonInformation.Allotment.HandleDiv">
+                                    <option value="0">0（取扱店（支店）なし）</option>
+                                    <option value="1">1（取扱店（支店）あり）</option>
+                                </select>
+                            </div>
+                            <div class="item child">
+                                <p>予約者情報区分<span v-if="displayTagName"> : RsvUserDiv</span></p>
+                                <select v-model="internnalObject.RisaplsInformation.RisaplsCommonInformation.Allotment.RsvUserDiv">
+                                    <option value="0">0（予約者情報なし）</option>
+                                    <option value="1">1（予約者情報あり）</option>
+                                </select>
+                            </div>
+                            <div class="item child">
+                                <p>利用区分<span v-if="displayTagName"> : UseDiv</span></p>
+                                <select v-model="internnalObject.RisaplsInformation.RisaplsCommonInformation.Allotment.UseDiv">
+                                    <option value="0">0（宿泊）</option>
+                                    <option value="1">1（日帰り（素泊まり））</option>
+                                </select>
+                            </div>
+                        </details>
+                    </details>
+                </div>
+                <div class="container-left-rateinfo">
+                    <table :key="renderKey">
+                        <tr class="sticky">
+                            <th width="50px">日付</th>
+                            <th width="10px"></th>
+                            <th width="40px">部屋</th>
+                            <th width="10px"></th>
+                            <th width="50px">部屋タイプ<wbr>コード</th>
+                            <th width="80px" v-if="RoomRateOrPersonalRate === 'RoomRate'">1室単価</th>
+                            <th width="80px" v-else></th>
+                            <th>男</th>
+                            <th>女</th>
+                            <th>小人<wbr>A</th>
+                            <th>小人<wbr>B</th>
+                            <th>小人<wbr>C</th>
+                            <th>小人<wbr>D</th>
+                        </tr>
+                        <tr v-for="(item, index) in internnalObject.RisaplsInformation.RisaplsCommonInformation.RoomAndRoomRateInformation">
+                            <template v-if="index % internnalObject.BasicInformation.TotalRoomCount == 0">
+                                <td :rowspan="internnalObject.BasicInformation.TotalRoomCount">{{ item.RoomRateInformation.RoomDate.toString().substring(5,10) }}</td>
+                                <td :rowspan="internnalObject.BasicInformation.TotalRoomCount"><button @click="bulkUpdate('perDay', index)">▼</button></td>
+                            </template>
+                            <td>{{ index % internnalObject.BasicInformation.TotalRoomCount + 1 }}</td>
+                            <td><button @click="bulkUpdate('perRoom', index)">▼</button></td>
+                            <td><input type="text" v-model="item.RoomInformation.RoomTypeCode"></td>
+                            <template v-if="RoomRateOrPersonalRate === 'RoomRate'">
+                                <td><input type="number" v-model.number="item.RoomRateInformation.TotalPerRoomRate"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomPaxMaleCount"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomPaxFemaleCount"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildA70Count"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildB50Count"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildC30Count"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildDNoneCount"></td>
+                            </template>
+                            <template v-if="RoomRateOrPersonalRate === 'PersonalRate'">
+                                <td><div class="if-personal-rate">人数</div><div class="if-personal-rate">料金</div></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomPaxMaleCount"><br><input type="number" v-model.number="item.RoomRateInformation.PerPaxMaleRate"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomPaxFemaleCount"><br><input type="number" v-model.number="item.RoomRateInformation.PerPaxFemaleRate"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildA70Count"><br><input type="number" v-model.number="item.RoomRateInformation.PerChildA70Rate"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildB50Count"><br><input type="number" v-model.number="item.RoomRateInformation.PerChildB50Rate"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildC30Count"><br><input type="number" v-model.number="item.RoomRateInformation.PerChildC30Rate"></td>
+                                <td><input type="number" v-model.number="item.RoomInformation.RoomChildDNoneCount"><br><input type="number" v-model.number="item.RoomRateInformation.PerChildDRate"></td>
+                            </template>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="container-right">
+                <span>出力ファイル名</span>
+                <input type="text" v-model="outputFileName">
+                <v-btn  @click="writeXml" prepend-icon="mdi-download" witdth="150">出力</v-btn>
+                
+                <p>出力イメージ</p>
+                <pre id="formattedXml" class="output-image">{{xmlString}}</pre>
+            </div>
+        </div>
+    </v-locale-provider></v-app></div>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.7.1/dist/vuetify.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/scripts/verify.min.js"></script> -->
+    <script src="ObjTree.js"></script>
+    <script src="CommonFunctions.js"></script>
+    <script src="script.js"></script>
+    <script src="resize.js"></script>
+</body>
+</html>
