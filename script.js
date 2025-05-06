@@ -16,25 +16,25 @@ const appObject = {
                     SystemDate: "2024-01-01"
                 },
                 AccommodationInformation: {
-                    AccommodationName: "日工テクニカルホテル",			
+                    AccommodationName: "山田テクニカルホテル",			
                     AccommodationCode: "12345"
                 },
                 SalesOfficeInformation: {
-                    SalesOfficeCompanyName: "日工トラベル",
+                    SalesOfficeCompanyName: "山田トラベル",
                     SalesOfficeName: "大阪支店"
                 },
                 BasicInformation: {
                     TravelAgencyBookingNumber: "000001",
                     TravelAgencyBookingDate: "2024-01-01",
                     GuestOrGroupNameSingleByte: "ﾆｯｺｳ ﾀﾛｳ",
-                    GuestOrGroupNameKanjiName: "日工　太郎",
+                    GuestOrGroupNameKanjiName: "山田　太郎",
                     CheckInDate: "2025-01-01",
                     CheckInTime: "15:00",
                     CheckOutDate: "2025-01-03",
                     CheckOutTime: "10:00",
                     Nights: 2,
                     TotalRoomCount: 2,
-                    PackagePlanName: "日工プラン",	
+                    PackagePlanName: "山田プラン",	
                     PackagePlanCode: "12345",
                     MealCondition: "1night2meals",
                     SpecificMealCondition: "IncludingBreakfastAndDinner"
